@@ -1,0 +1,378 @@
+/* Modern light + dark theme for Tic Tac Toe (responsive, accessible, no external UI framework). */
+:root {
+  --bg: #f9fafb;
+  --surface: #ffffff;
+  --surface-2: #f3f4f6;
+
+  --text: #111827;
+  --muted: #6b7280;
+
+  --primary: #3b82f6;
+  --primary-2: #06b6d4;
+
+  --border: rgba(17, 24, 39, 0.10);
+  --shadow: 0 16px 50px rgba(17, 24, 39, 0.10);
+
+  --danger: #ef4444;
+
+  --cell-bg: #ffffff;
+  --cell-border: rgba(17, 24, 39, 0.12);
+
+  --cell-win-bg: rgba(6, 182, 212, 0.14);
+  --cell-win-border: rgba(6, 182, 212, 0.55);
+
+  --radius: 18px;
+
+  /* Derived/background accents */
+  --bg-accent-1: rgba(59, 130, 246, 0.10);
+  --bg-accent-2: rgba(6, 182, 212, 0.10);
+  --shell-grad-1: rgba(255, 255, 255, 0.90);
+  --shell-grad-2: rgba(255, 255, 255, 0.75);
+
+  --scoreItem-grad-1: rgba(243, 244, 246, 0.55);
+  --scoreItem-grad-2: rgba(255, 255, 255, 0.95);
+
+  --board-bg: rgba(243, 244, 246, 0.65);
+
+  --cell-shadow: 0 6px 18px rgba(17, 24, 39, 0.06);
+  --cell-shadow-hover: 0 10px 24px rgba(17, 24, 39, 0.10);
+  --btn-shadow-hover: 0 12px 24px rgba(17, 24, 39, 0.10);
+  --btnSubtle-shadow-hover: 0 10px 22px rgba(17, 24, 39, 0.08);
+
+  --status-win-grad-2: rgba(255, 255, 255, 0.85);
+  --status-draw-grad-2: rgba(255, 255, 255, 0.85);
+}
+
+/* Theme override: set on the App root via data-theme. */
+.App[data-theme="dark"] {
+  --bg: #0b1220;
+  --surface: rgba(17, 24, 39, 0.78);
+  --surface-2: rgba(31, 41, 55, 0.78);
+
+  --text: #e5e7eb;
+  --muted: rgba(229, 231, 235, 0.70);
+
+  --border: rgba(229, 231, 235, 0.14);
+  --shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+
+  --cell-bg: rgba(17, 24, 39, 0.72);
+  --cell-border: rgba(229, 231, 235, 0.16);
+
+  --cell-win-bg: rgba(6, 182, 212, 0.18);
+  --cell-win-border: rgba(34, 211, 238, 0.60);
+
+  --bg-accent-1: rgba(59, 130, 246, 0.18);
+  --bg-accent-2: rgba(6, 182, 212, 0.14);
+  --shell-grad-1: rgba(17, 24, 39, 0.88);
+  --shell-grad-2: rgba(17, 24, 39, 0.70);
+
+  --scoreItem-grad-1: rgba(31, 41, 55, 0.70);
+  --scoreItem-grad-2: rgba(17, 24, 39, 0.78);
+
+  --board-bg: rgba(31, 41, 55, 0.55);
+
+  --cell-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+  --cell-shadow-hover: 0 14px 34px rgba(0, 0, 0, 0.50);
+  --btn-shadow-hover: 0 14px 34px rgba(0, 0, 0, 0.45);
+  --btnSubtle-shadow-hover: 0 12px 30px rgba(0, 0, 0, 0.40);
+
+  --status-win-grad-2: rgba(17, 24, 39, 0.80);
+  --status-draw-grad-2: rgba(17, 24, 39, 0.80);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+.App {
+  min-height: 100vh;
+  background:
+    radial-gradient(1000px 700px at 10% 0%, var(--bg-accent-1), transparent 55%),
+    radial-gradient(900px 650px at 95% 30%, var(--bg-accent-2), transparent 60%),
+    var(--bg);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 16px;
+}
+
+.ttt-shell {
+  width: min(560px, 100%);
+  background: linear-gradient(180deg, var(--shell-grad-1), var(--shell-grad-2));
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+  padding: 22px;
+}
+
+.ttt-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: start;
+  margin-bottom: 18px;
+}
+
+.ttt-headerRight {
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+}
+
+.ttt-title {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.ttt-subtitle {
+  margin: 6px 0 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.ttt-status {
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  min-width: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ttt-status[data-state="win"] {
+  border-color: rgba(6, 182, 212, 0.45);
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.14), var(--status-win-grad-2));
+}
+
+.ttt-status[data-state="draw"] {
+  border-color: rgba(107, 114, 128, 0.30);
+  background: linear-gradient(180deg, rgba(107, 114, 128, 0.10), var(--status-draw-grad-2));
+}
+
+.ttt-statusLabel {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-size: 14px;
+}
+
+.ttt-boardSection {
+  display: grid;
+  gap: 16px;
+}
+
+.ttt-scoreboard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.ttt-scoreItems {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+.ttt-scoreItem {
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--scoreItem-grad-1), var(--scoreItem-grad-2));
+  border-radius: 14px;
+  padding: 10px 10px;
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+}
+
+.ttt-scoreLabel {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.ttt-scoreValue {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.ttt-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  background: var(--board-bg);
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+}
+
+.ttt-cell {
+  appearance: none;
+  border: 1px solid var(--cell-border);
+  background: var(--cell-bg);
+  border-radius: 14px;
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
+  box-shadow: var(--cell-shadow);
+  user-select: none;
+}
+
+.ttt-cell:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(59, 130, 246, 0.45);
+  box-shadow: var(--cell-shadow-hover);
+}
+
+.ttt-cell:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.ttt-cell:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, 0.40);
+  outline-offset: 2px;
+}
+
+.ttt-cell:disabled {
+  cursor: not-allowed;
+  opacity: 0.92;
+}
+
+.ttt-mark {
+  font-size: clamp(40px, 7.6vw, 64px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.ttt-cell.is-filled .ttt-mark {
+  color: var(--text);
+}
+
+.ttt-cell.is-winning {
+  background: var(--cell-win-bg);
+  border-color: var(--cell-win-border);
+  box-shadow: 0 14px 30px rgba(6, 182, 212, 0.18);
+}
+
+.ttt-actions {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+}
+
+.ttt-btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+}
+
+.ttt-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--btn-shadow-hover);
+}
+
+.ttt-btn:active {
+  transform: translateY(0);
+}
+
+.ttt-btn:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, 0.40);
+  outline-offset: 2px;
+}
+
+.ttt-btnPrimary {
+  border: none;
+  color: white;
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  padding: 12px 16px;
+  width: min(260px, 100%);
+}
+
+.ttt-btnSubtle {
+  background: var(--surface-2);
+  border-color: rgba(17, 24, 39, 0.12);
+  color: var(--text);
+  padding: 10px 12px;
+  white-space: nowrap;
+}
+
+.ttt-btnSubtle:hover {
+  box-shadow: var(--btnSubtle-shadow-hover);
+}
+
+.ttt-themeToggle {
+  justify-self: end;
+}
+
+.ttt-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+  max-width: 46ch;
+}
+
+@media (max-width: 520px) {
+  .ttt-shell {
+    padding: 16px;
+  }
+
+  .ttt-header {
+    grid-template-columns: 1fr;
+  }
+
+  .ttt-headerRight {
+    justify-items: start;
+  }
+
+  .ttt-status {
+    justify-self: start;
+    min-width: unset;
+    width: 100%;
+  }
+
+  .ttt-themeToggle {
+    width: 100%;
+  }
+
+  .ttt-scoreboard {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ttt-scoreItems {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .ttt-board {
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .ttt-cell {
+    border-radius: 12px;
+  }
+}
