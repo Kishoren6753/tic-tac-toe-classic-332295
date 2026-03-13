@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 
 const BOARD_SIZE = 9;
@@ -15,6 +15,8 @@ const WIN_LINES = [
   [0, 4, 8],
   [2, 4, 6],
 ];
+
+const SCORE_STORAGE_KEY = 'ttt:scores:v1';
 
 /**
  * Computes the winner (if any) for a 3x3 tic-tac-toe board.
@@ -40,6 +42,31 @@ function isDraw(squares) {
   return squares.every(Boolean) && !calculateWinner(squares).winner;
 }
 
+/**
+ * Loads a persisted scoreboard from localStorage (if present/valid).
+ * @returns {{xWins:number,oWins:number,draws:number}}
+ */
+function loadScores() {
+  try {
+    const raw = window.localStorage.getItem(SCORE_STORAGE_KEY);
+    if (!raw) return { xWins: 0, oWins: 0, draws: 0 };
+    const parsed = JSON.parse(raw);
+
+    // Basic validation + coercion to avoid breaking the UI due to bad data.
+    const xWins = Number(parsed?.xWins);
+    const oWins = Number(parsed?.oWins);
+    const draws = Number(parsed?.draws);
+
+    return {
+      xWins: Number.isFinite(xWins) && xWins >= 0 ? xWins : 0,
+      oWins: Number.isFinite(oWins) && oWins >= 0 ? oWins : 0,
+      draws: Number.isFinite(draws) && draws >= 0 ? draws : 0,
+    };
+  } catch {
+    return { xWins: 0, oWins: 0, draws: 0 };
+  }
+}
+
 // PUBLIC_INTERFACE
 function App() {
   /** Board state: 9 squares for a 3x3 grid. */
@@ -47,14 +74,42 @@ function App() {
   /** Tracks whose turn it is (X starts). */
   const [xIsNext, setXIsNext] = useState(true);
 
+  /** Persistent scoreboard. */
+  const [scores, setScores] = useState(() => loadScores());
+
   const { winner, winningLine } = useMemo(() => calculateWinner(squares), [squares]);
   const draw = useMemo(() => isDraw(squares), [squares]);
+
+  // Used to ensure we only count a game's result once.
+  const resultCountedRef = useRef(false);
 
   const statusText = useMemo(() => {
     if (winner) return `${winner} wins`;
     if (draw) return 'Draw';
     return `Turn: ${xIsNext ? 'X' : 'O'}`;
   }, [winner, draw, xIsNext]);
+
+  // Persist scoreboard to localStorage whenever it changes.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(SCORE_STORAGE_KEY, JSON.stringify(scores));
+    } catch {
+      // Ignore persistence failures (private mode/quota/etc.).
+    }
+  }, [scores]);
+
+  // Increment scoreboard when a game ends (win or draw). Only do it once per game.
+  useEffect(() => {
+    const ended = Boolean(winner || draw);
+    if (!ended || resultCountedRef.current) return;
+
+    resultCountedRef.current = true;
+    setScores((prev) => {
+      if (winner === 'X') return { ...prev, xWins: prev.xWins + 1 };
+      if (winner === 'O') return { ...prev, oWins: prev.oWins + 1 };
+      return { ...prev, draws: prev.draws + 1 };
+    });
+  }, [winner, draw]);
 
   // PUBLIC_INTERFACE
   const handleSquareClick = (index) => {
@@ -73,6 +128,13 @@ function App() {
   const resetGame = () => {
     setSquares(Array(BOARD_SIZE).fill(null));
     setXIsNext(true);
+    // Allow the next finished game to be counted.
+    resultCountedRef.current = false;
+  };
+
+  // PUBLIC_INTERFACE
+  const resetScores = () => {
+    setScores({ xWins: 0, oWins: 0, draws: 0 });
   };
 
   return (
@@ -95,6 +157,33 @@ function App() {
         </header>
 
         <section className="ttt-boardSection" aria-label="Game board">
+          <div className="ttt-scoreboard" role="group" aria-label="Scoreboard">
+            <div className="ttt-scoreItems" aria-label="Score summary">
+              <div className="ttt-scoreItem">
+                <div className="ttt-scoreLabel">X</div>
+                <div className="ttt-scoreValue" aria-label={`X wins ${scores.xWins}`}>
+                  {scores.xWins}
+                </div>
+              </div>
+              <div className="ttt-scoreItem">
+                <div className="ttt-scoreLabel">Draws</div>
+                <div className="ttt-scoreValue" aria-label={`Draws ${scores.draws}`}>
+                  {scores.draws}
+                </div>
+              </div>
+              <div className="ttt-scoreItem">
+                <div className="ttt-scoreLabel">O</div>
+                <div className="ttt-scoreValue" aria-label={`O wins ${scores.oWins}`}>
+                  {scores.oWins}
+                </div>
+              </div>
+            </div>
+
+            <button type="button" className="ttt-btn ttt-btnSubtle" onClick={resetScores}>
+              Reset scores
+            </button>
+          </div>
+
           <div className="ttt-board" role="grid" aria-label="Tic Tac Toe board">
             {squares.map((value, idx) => {
               const isWinning = Boolean(winningLine && winningLine.includes(idx));
@@ -123,9 +212,7 @@ function App() {
             <button type="button" className="ttt-btn ttt-btnPrimary" onClick={resetGame}>
               New game
             </button>
-            <p className="ttt-hint">
-              Tip: the winning line highlights when someone gets three in a row.
-            </p>
+            <p className="ttt-hint">Tip: the winning line highlights when someone gets three in a row.</p>
           </div>
         </section>
       </main>
