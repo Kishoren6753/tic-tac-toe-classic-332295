@@ -17,6 +17,7 @@ const WIN_LINES = [
 ];
 
 const SCORE_STORAGE_KEY = 'ttt:scores:v1';
+const THEME_STORAGE_KEY = 'ttt:theme:v1';
 
 /**
  * Computes the winner (if any) for a 3x3 tic-tac-toe board.
@@ -67,6 +68,31 @@ function loadScores() {
   }
 }
 
+/**
+ * Loads a persisted theme preference from localStorage (if present/valid).
+ * Defaults to the OS preference on first load.
+ * @returns {'light'|'dark'}
+ */
+function loadTheme() {
+  try {
+    const raw = window.localStorage.getItem(THEME_STORAGE_KEY);
+    if (raw === 'light' || raw === 'dark') return raw;
+  } catch {
+    // ignore
+  }
+
+  // Prefer the user's OS setting if available.
+  try {
+    const prefersDark =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return prefersDark ? 'dark' : 'light';
+  } catch {
+    return 'light';
+  }
+}
+
 // PUBLIC_INTERFACE
 function App() {
   /** Board state: 9 squares for a 3x3 grid. */
@@ -76,6 +102,9 @@ function App() {
 
   /** Persistent scoreboard. */
   const [scores, setScores] = useState(() => loadScores());
+
+  /** Theme (light/dark). Persisted. */
+  const [theme, setTheme] = useState(() => loadTheme());
 
   const { winner, winningLine } = useMemo(() => calculateWinner(squares), [squares]);
   const draw = useMemo(() => isDraw(squares), [squares]);
@@ -97,6 +126,15 @@ function App() {
       // Ignore persistence failures (private mode/quota/etc.).
     }
   }, [scores]);
+
+  // Persist theme + set attribute for CSS to target.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {
+      // Ignore persistence failures (private mode/quota/etc.).
+    }
+  }, [theme]);
 
   // Increment scoreboard when a game ends (win or draw). Only do it once per game.
   useEffect(() => {
@@ -137,8 +175,13 @@ function App() {
     setScores({ xWins: 0, oWins: 0, draws: 0 });
   };
 
+  // PUBLIC_INTERFACE
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
   return (
-    <div className="App">
+    <div className="App" data-theme={theme}>
       <main className="ttt-shell">
         <header className="ttt-header">
           <div className="ttt-titleWrap">
@@ -146,13 +189,25 @@ function App() {
             <p className="ttt-subtitle">Local 2-player (X vs O)</p>
           </div>
 
-          <div
-            className="ttt-status"
-            role="status"
-            aria-live="polite"
-            data-state={winner ? 'win' : draw ? 'draw' : 'play'}
-          >
-            <span className="ttt-statusLabel">{statusText}</span>
+          <div className="ttt-headerRight">
+            <button
+              type="button"
+              className="ttt-btn ttt-btnSubtle ttt-themeToggle"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            >
+              {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+            </button>
+
+            <div
+              className="ttt-status"
+              role="status"
+              aria-live="polite"
+              data-state={winner ? 'win' : draw ? 'draw' : 'play'}
+            >
+              <span className="ttt-statusLabel">{statusText}</span>
+            </div>
           </div>
         </header>
 
